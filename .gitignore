@@ -15,3 +15,6 @@ __pycache__/
 # local debugging outputs
 amazon_debug.html
 *.log
+bot.lock
+*.backup.json
+.DS_Store

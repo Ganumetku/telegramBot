@@ -1,72 +1,77 @@
 """
 config.py
 ---------
-This module handles loading and validating configuration settings for the Telegram Deal Bot.
-It uses 'python-dotenv' to securely read credentials from a local '.env' file, keeping sensitive
-data out of the main code repository.
+Configuration management for the Telegram Deals Automation Bot.
+Reads environment variables from a local '.env' file anchored to BASE_DIR.
 """
 
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Find the directory containing this config file
+# Base directory for all relative paths
 BASE_DIR = Path(__file__).resolve().parent
 
-# Load environment variables from the .env file in the base directory
-env_path = BASE_DIR / '.env'
+# Load environment variables from the .env file in BASE_DIR
+env_path = BASE_DIR / ".env"
 if env_path.exists():
     load_dotenv(dotenv_path=env_path)
 
-# Telegram Bot Token (obtained from @BotFather)
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+# --- TELEGRAM CREDENTIALS ---
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+PRIVATE_REVIEW_CHANNEL = os.getenv("TELEGRAM_PRIVATE_REVIEW_CHANNEL", "").strip()
+PUBLIC_DEALS_CHANNEL = os.getenv("TELEGRAM_PUBLIC_DEALS_CHANNEL", "").strip()
 
-# Telegram Private Review Channel (where crawler sends raw deals for review)
-PRIVATE_REVIEW_CHANNEL = os.getenv("TELEGRAM_PRIVATE_REVIEW_CHANNEL", "@YOUR_PRIVATE_CHANNEL_HERE")
+# Target Single Myntra Product URL (optional reference)
+MYNTRA_PRODUCT_URL = os.getenv("MYNTRA_PRODUCT_URL", "https://www.myntra.com/1364628").strip()
 
-# Telegram Public Deals Channel (where approved deals are published manually)
-PUBLIC_DEALS_CHANNEL = os.getenv("TELEGRAM_PUBLIC_DEALS_CHANNEL", "@YOUR_PUBLIC_CHANNEL_HERE")
+# --- SEARCH KEYWORDS ---
+_raw_keywords = os.getenv("KEYWORDS", "men tshirt, sneakers, hoodie, women kurti")
+KEYWORDS = [k.strip() for k in _raw_keywords.split(",") if k.strip()]
 
-# Target Real Myntra Product URL to scrape
-MYNTRA_PRODUCT_URL = os.getenv("MYNTRA_PRODUCT_URL", "https://www.myntra.com/1364628")
 
-# Default search keywords for our real-time fashion product crawler
-KEYWORDS = ["men tshirt", "sneakers", "hoodie", "women kurti"]
+def _parse_keywords(env_val: str, fallback: list) -> list:
+    if not env_val or not env_val.strip():
+        return fallback
+    parsed = [k.strip() for k in env_val.split(",") if k.strip()]
+    return parsed if parsed else fallback
 
-# Advanced Deal Filtering & Rate Limiting Settings
-SCAN_INTERVAL = 10              # Run full product scan every 10 minutes only
-DISCOUNT_THRESHOLD = 80.0       # Only send deals with discount >= 80%
-MAX_DEALS_PER_SCAN = 3          # Maximum Telegram posts per search scan
-REQUEST_DELAY_MIN = 3.0         # Minimum random delay in seconds between scraping pages
-REQUEST_DELAY_MAX = 8.0         # Maximum random delay in seconds between scraping pages
-DUPLICATE_DB_FILE = "posted_deals.json"  # Persistent database for posted deals
 
+KEYWORDS_MYNTRA = _parse_keywords(os.getenv("KEYWORDS_MYNTRA", ""), KEYWORDS)
+KEYWORDS_FLIPKART = _parse_keywords(os.getenv("KEYWORDS_FLIPKART", ""), KEYWORDS)
+KEYWORDS_AMAZON = _parse_keywords(os.getenv("KEYWORDS_AMAZON", ""), KEYWORDS)
+
+# Maximum keywords to query per platform in a single scan cycle
+MAX_KEYWORDS_PER_SCAN = int(os.getenv("MAX_KEYWORDS_PER_SCAN", "2"))
+
+# --- DISCOUNT & FILTERING SETTINGS ---
+# Read DROP_PERCENT with fallback to DISCOUNT_THRESHOLD (default 80.0%)
+DISCOUNT_THRESHOLD = float(os.getenv("DROP_PERCENT", os.getenv("DISCOUNT_THRESHOLD", "80.0")))
+
+# Minimum sale price in INR to filter out junk/broken listings (default 99)
+MIN_SALE_PRICE = float(os.getenv("MIN_SALE_PRICE", "99"))
+
+# Maximum Telegram alerts to post per scan cycle (flood prevention)
+MAX_DEALS_PER_SCAN = int(os.getenv("MAX_DEALS_PER_SCAN", "3"))
+
+# Random delays (in seconds) between web requests
+REQUEST_DELAY_MIN = float(os.getenv("REQUEST_DELAY_MIN", "5.0"))
+REQUEST_DELAY_MAX = float(os.getenv("REQUEST_DELAY_MAX", "15.0"))
+
+# --- SEPARATE SCAN INTERVALS PER PLATFORM (in minutes) ---
+MYNTRA_INTERVAL_MIN = int(os.getenv("MYNTRA_INTERVAL_MIN", "15"))
+FLIPKART_INTERVAL_MIN = int(os.getenv("FLIPKART_INTERVAL_MIN", "30"))
+AMAZON_INTERVAL_MIN = int(os.getenv("AMAZON_INTERVAL_MIN", "60"))
+
+# --- STORAGE & LOGGING PATHS (Anchored to BASE_DIR) ---
+DUPLICATE_DB_FILE = BASE_DIR / os.getenv("DUPLICATE_DB_FILE", "posted_deals.json")
+LOG_FILE = BASE_DIR / "bot.log"
 
 
 def is_configured() -> bool:
     """
-    Validates if the user has replaced the default placeholder values
-    with their real Telegram bot credentials.
+    Validates if real Telegram credentials are provided.
     """
-    has_token = BOT_TOKEN and BOT_TOKEN != "YOUR_BOT_TOKEN_HERE"
-    has_private = PRIVATE_REVIEW_CHANNEL and PRIVATE_REVIEW_CHANNEL != "@YOUR_PRIVATE_CHANNEL_HERE"
-    has_public = PUBLIC_DEALS_CHANNEL and PUBLIC_DEALS_CHANNEL != "@YOUR_PUBLIC_CHANNEL_HERE"
-    
-    return bool(has_token and has_private and has_public)
-
-def print_configuration_help():
-    """
-    Prints a clean, formatted helper message to the console if the
-    credentials are still using default values.
-    """
-    print("=" * 60)
-    print("❌ TELEGRAM BOT CONFIGURATION ERROR ❌")
-    print("=" * 60)
-    print("It looks like you haven't set up your credentials yet!")
-    print("\nTo fix this:")
-    print("1. Open the '.env' file in the base directory.")
-    print("2. Replace 'YOUR_BOT_TOKEN_HERE' with the token from @BotFather.")
-    print("3. Set 'TELEGRAM_PRIVATE_REVIEW_CHANNEL' with your Private Review Channel username.")
-    print("4. Set 'TELEGRAM_PUBLIC_DEALS_CHANNEL' with your Public Deals Channel username.")
-    print("\nOnce configured correctly, restart the script to start automated review posts!")
-    print("=" * 60)
+    has_token = bool(BOT_TOKEN and BOT_TOKEN != "YOUR_BOT_TOKEN_HERE")
+    has_private = bool(PRIVATE_REVIEW_CHANNEL and PRIVATE_REVIEW_CHANNEL != "@YOUR_PRIVATE_CHANNEL_HERE")
+    return bool(has_token and has_private)

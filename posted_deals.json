@@ -1,32 +1,182 @@
-[
-    "TSHGMJ9UGCZ3XHTX",
-    "SHOHBZJVHX6P2YDC",
-    "TSHH9MAXRU8WHG3D",
-    "39696371",
-    "SHOH35TYGDAMUVV3",
-    "TSHGMJAZBMFMCWQM",
-    "17692598",
-    "SHOHANW98WYBHYF9",
-    "39696362",
-    "TSHGMJ8ZFX2HQHNE",
-    "TSHHGWG5WFWPRYV4",
-    "SHOHBZJV2BFUZWHW",
-    "SHOHDUD8V6KNDCWN",
-    "SHOGMKFZJYJKJZ4J",
-    "34215709",
-    "19888440",
-    "24014326",
-    "41488549",
-    "41488722",
-    "TSHHM7T65SDYNTQQ",
-    "40372741",
-    "40394340",
-    "TSHHNAZCJK5U4CJG",
-    "33276700",
-    "41488724",
-    "SHOHBZJVSNGBG6H5",
-    "SHOH8YUMMGUURVTC",
-    "24848554",
-    "SHOHHD2FNSJWMYUN",
-    "SWSHHJQENQZTQYQC"
-]
+{
+    "flipkart:TSHGMJ9UGCZ3XHTX": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:SHOHBZJVHX6P2YDC": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:TSHH9MAXRU8WHG3D": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:39696371": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:SHOH35TYGDAMUVV3": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:TSHGMJAZBMFMCWQM": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:17692598": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:SHOHANW98WYBHYF9": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:39696362": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:TSHGMJ8ZFX2HQHNE": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:TSHHGWG5WFWPRYV4": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:SHOHBZJV2BFUZWHW": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:SHOHDUD8V6KNDCWN": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:SHOGMKFZJYJKJZ4J": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:34215709": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:19888440": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:24014326": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:41488549": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:41488722": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:TSHHM7T65SDYNTQQ": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:40372741": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:40394340": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:TSHHNAZCJK5U4CJG": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:33276700": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:41488724": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:SHOHBZJVSNGBG6H5": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:SHOH8YUMMGUURVTC": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:24848554": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:SHOHHD2FNSJWMYUN": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "flipkart:SWSHHJQENQZTQYQC": {
+        "last_alert_price": null,
+        "last_alert_ts": null
+    },
+    "myntra:42122809": {
+        "last_alert_price": 282.0,
+        "last_alert_ts": "2026-10-09T08:49:10.871653"
+    },
+    "myntra:42122810": {
+        "last_alert_price": 282.0,
+        "last_alert_ts": "2026-10-09T08:49:15.374728"
+    },
+    "myntra:42281181": {
+        "last_alert_price": 282.0,
+        "last_alert_ts": "2026-10-09T08:49:22.093290"
+    },
+    "amazon:B0FK9MV4Z9": {
+        "last_alert_price": 449.0,
+        "last_alert_ts": "2026-10-09T08:49:47.023323"
+    },
+    "amazon:B0DBDMYWK3": {
+        "last_alert_price": 429.0,
+        "last_alert_ts": "2026-10-09T08:49:51.945024"
+    },
+    "amazon:B0DBDNTW28": {
+        "last_alert_price": 429.0,
+        "last_alert_ts": "2026-10-09T08:49:56.544985"
+    },
+    "myntra:46510800": {
+        "last_alert_price": 497.0,
+        "last_alert_ts": "2026-10-09T11:45:16.139215"
+    },
+    "myntra:37458473": {
+        "last_alert_price": 1416.0,
+        "last_alert_ts": "2026-10-09T11:45:21.376129"
+    },
+    "myntra:27216466": {
+        "last_alert_price": 1123.0,
+        "last_alert_ts": "2026-10-09T11:45:25.808133"
+    },
+    "amazon:B0DBDPWD8S": {
+        "last_alert_price": 449.0,
+        "last_alert_ts": "2026-10-09T11:45:48.296115"
+    },
+    "amazon:B0CHRSWCG8": {
+        "last_alert_price": 249.0,
+        "last_alert_ts": "2026-10-09T11:45:53.087623"
+    },
+    "amazon:B0FLY2K2VJ": {
+        "last_alert_price": 449.0,
+        "last_alert_ts": "2026-10-09T11:45:56.901700"
+    },
+    "myntra:42281182": {
+        "last_alert_price": 282.0,
+        "last_alert_ts": "2026-10-09T12:01:00.261541"
+    },
+    "myntra:42537562": {
+        "last_alert_price": 282.0,
+        "last_alert_ts": "2026-10-09T12:01:05.126423"
+    },
+    "myntra:41529009": {
+        "last_alert_price": 325.0,
+        "last_alert_ts": "2026-10-09T12:01:12.616092"
+    }
+}
