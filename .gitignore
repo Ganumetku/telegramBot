@@ -18,3 +18,9 @@ amazon_debug.html
 bot.lock
 *.backup.json
 .DS_Store
+
+# EarnKaro session, profile and test artifacts
+earnkaro_session.json
+earnkaro_profile/
+earnkaro_links_cache.json
+*.png

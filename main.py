@@ -35,6 +35,11 @@ import telegram
 import telegram.error
 
 import config
+try:
+    from earnkaro_converter import convert_to_earnkaro_link
+except ImportError:
+    def convert_to_earnkaro_link(url: str) -> str:
+        return url
 
 # --- STRUCTURED LOGGING SETUP (RotatingFileHandler + Console) ---
 logger = logging.getLogger("DealBot")
@@ -671,7 +676,8 @@ def format_review_message(
     product: dict,
     discount_percent: float,
     is_price_drop: bool = False,
-    old_price: Optional[float] = None
+    old_price: Optional[float] = None,
+    affiliate_url: Optional[str] = None
 ) -> str:
     """
     Builds clean, structured HTML deal message for the private review channel.
@@ -700,6 +706,26 @@ def format_review_message(
             f"💰 <b>Deal Price:</b> ₹{deal}"
         )
 
+    if affiliate_url and affiliate_url != product["url"]:
+        escaped_affiliate = html.escape(affiliate_url)
+        link_block = (
+            f"💰 <b>EarnKaro Profit Link (Ready!):</b>\n"
+            f"👉 {escaped_affiliate}\n\n"
+            f"🔗 <b>Original Product URL:</b>\n"
+            f"{escaped_url}\n\n"
+            f"📝 <b>Action Instructions:</b>\n"
+            f"✅ Profit link automatically generated!\n"
+            f"Forward or post approved details to Public Channel: {public_ch}"
+        )
+    else:
+        link_block = (
+            f"🔗 <b>Product Original URL:</b>\n"
+            f"{escaped_url}\n\n"
+            f"📝 <b>Action Instructions:</b>\n"
+            f"1. Generate your affiliate link for this product.\n"
+            f"2. Forward/post approved details to Public Channel: {public_ch}"
+        )
+
     message = (
         f"{header}\n\n"
         f"📦 <b>Product:</b> {escaped_name}\n"
@@ -707,11 +733,7 @@ def format_review_message(
         f"{price_line}\n"
         f"📉 <b>Discount:</b> {int(round(discount_percent))}% OFF\n"
         f"💸 <b>You Save:</b> ₹{saving}\n\n"
-        f"🔗 <b>Product Original URL:</b>\n"
-        f"{escaped_url}\n\n"
-        f"📝 <b>Action Instructions:</b>\n"
-        f"1. Generate your affiliate link for this product.\n"
-        f"2. Forward/post approved details to Public Channel: {public_ch}"
+        f"{link_block}"
     )
     return message
 
@@ -913,11 +935,16 @@ async def scan_platform(
                 name, product["name"][:35], sale_price, product["original_price"], int(discount)
             )
 
+            # Auto-convert product URL to EarnKaro affiliate link
+            orig_url = product.get("url", "")
+            affiliate_url = await asyncio.to_thread(convert_to_earnkaro_link, orig_url)
+
             deal_msg = format_review_message(
                 product=product,
                 discount_percent=discount,
                 is_price_drop=is_price_drop,
-                old_price=old_alert_price
+                old_price=old_alert_price,
+                affiliate_url=affiliate_url
             )
 
             sent_ok = False
@@ -927,7 +954,7 @@ async def scan_platform(
                     channel_chat_id=channel_chat_id,
                     message=deal_msg,
                     image_url=product.get("image_url", ""),
-                    product_url=product.get("url")
+                    product_url=affiliate_url or orig_url
                 )
             else:
                 logger.error("   ❌ Telegram credentials or review channel missing for broadcast.")
