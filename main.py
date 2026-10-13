@@ -680,60 +680,25 @@ def format_review_message(
     affiliate_url: Optional[str] = None
 ) -> str:
     """
-    Builds clean, structured HTML deal message for the private review channel.
-    Uses html.escape() on all dynamic strings.
+    Builds clean, minimal HTML deal message containing only:
+    Product name, MRP, Deal Price, Discount, You Save, and single Product URL (EarnKaro link).
     """
     saving = int(round(product["original_price"] - product["sale_price"]))
     mrp = int(round(product["original_price"]))
     deal = int(round(product["sale_price"]))
     escaped_name = html.escape(product["name"])
-    escaped_source = html.escape(product.get("source", "Store"))
-    escaped_url = html.escape(product["url"])
-    public_ch = html.escape(config.PUBLIC_DEALS_CHANNEL)
 
-    if is_price_drop and old_price is not None:
-        header = "📉 <b>[PRICE DROP DETECTED]</b> 📉"
-        price_line = (
-            f"💵 <b>MRP:</b> <s>₹{mrp}</s>\n"
-            f"💸 <b>Previous Alert Price:</b> <s>₹{int(round(old_price))}</s>\n"
-            f"💰 <b>New Deal Price:</b> ₹{deal}"
-        )
-    else:
-        label = "MEGA DEAL" if discount_percent >= 90.0 else "HOT DEAL"
-        header = f"🚨 <b>[{label} PENDING REVIEW]</b> 🚨"
-        price_line = (
-            f"💵 <b>MRP (Original Price):</b> <s>₹{mrp}</s>\n"
-            f"💰 <b>Deal Price:</b> ₹{deal}"
-        )
-
-    if affiliate_url and affiliate_url != product["url"]:
-        escaped_affiliate = html.escape(affiliate_url)
-        link_block = (
-            f"💰 <b>EarnKaro Profit Link (Ready!):</b>\n"
-            f"👉 {escaped_affiliate}\n\n"
-            f"🔗 <b>Original Product URL:</b>\n"
-            f"{escaped_url}\n\n"
-            f"📝 <b>Action Instructions:</b>\n"
-            f"✅ Profit link automatically generated!\n"
-            f"Forward or post approved details to Public Channel: {public_ch}"
-        )
-    else:
-        link_block = (
-            f"🔗 <b>Product Original URL:</b>\n"
-            f"{escaped_url}\n\n"
-            f"📝 <b>Action Instructions:</b>\n"
-            f"1. Generate your affiliate link for this product.\n"
-            f"2. Forward/post approved details to Public Channel: {public_ch}"
-        )
+    final_url = affiliate_url if affiliate_url else product.get("url", "")
+    escaped_url = html.escape(final_url)
 
     message = (
-        f"{header}\n\n"
-        f"📦 <b>Product:</b> {escaped_name}\n"
-        f"🏷️ <b>Store:</b> {escaped_source}\n\n"
-        f"{price_line}\n"
+        f"📦 <b>Product:</b> {escaped_name}\n\n"
+        f"💵 <b>MRP:</b> <s>₹{mrp}</s>\n"
+        f"💰 <b>Deal Price:</b> ₹{deal}\n"
         f"📉 <b>Discount:</b> {int(round(discount_percent))}% OFF\n"
         f"💸 <b>You Save:</b> ₹{saving}\n\n"
-        f"{link_block}"
+        f"🔗 <b>Product URL:</b>\n"
+        f"{escaped_url}"
     )
     return message
 
