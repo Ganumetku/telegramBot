@@ -882,5 +882,21 @@
     "myntra:28206710": {
         "last_alert_price": 958.0,
         "last_alert_ts": "2026-10-13T08:20:53.106500"
+    },
+    "amazon:B0DRFPP6YB": {
+        "last_alert_price": 349.0,
+        "last_alert_ts": "2026-10-13T08:41:58.898837"
+    },
+    "amazon:B0D5MLQMNR": {
+        "last_alert_price": 213.0,
+        "last_alert_ts": "2026-10-13T08:42:16.581777"
+    },
+    "amazon:B0GKTWQBL5": {
+        "last_alert_price": 219.0,
+        "last_alert_ts": "2026-10-13T08:42:30.332832"
+    },
+    "myntra:38503143": {
+        "last_alert_price": 740.0,
+        "last_alert_ts": "2026-10-13T08:56:27.481082"
     }
 }
