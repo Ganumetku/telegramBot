@@ -94,27 +94,27 @@ def get_keyword_weight(keyword: str) -> float:
         return 0.40
     return 0.50
 
-# Maximum keywords to query per platform in a single scan cycle
-MAX_KEYWORDS_PER_SCAN = int(os.getenv("MAX_KEYWORDS_PER_SCAN", "2"))
+# Maximum keywords to query per platform in a single scan cycle (default 4 for faster coverage)
+MAX_KEYWORDS_PER_SCAN = int(os.getenv("MAX_KEYWORDS_PER_SCAN", "4"))
 
 # --- DISCOUNT & FILTERING SETTINGS ---
-# Read DROP_PERCENT with fallback to DISCOUNT_THRESHOLD (default 80.0%)
-DISCOUNT_THRESHOLD = float(os.getenv("DROP_PERCENT", os.getenv("DISCOUNT_THRESHOLD", "80.0")))
+# Read DROP_PERCENT with fallback to DISCOUNT_THRESHOLD (default 70.0% for high-frequency deals)
+DISCOUNT_THRESHOLD = float(os.getenv("DROP_PERCENT", os.getenv("DISCOUNT_THRESHOLD", "70.0")))
 
 # Minimum sale price in INR to filter out junk/broken listings (default 99)
 MIN_SALE_PRICE = float(os.getenv("MIN_SALE_PRICE", "99"))
 
-# Maximum Telegram alerts to post per scan cycle (flood prevention)
-MAX_DEALS_PER_SCAN = int(os.getenv("MAX_DEALS_PER_SCAN", "3"))
+# Maximum Telegram alerts to post per scan cycle (flood prevention, default 5)
+MAX_DEALS_PER_SCAN = int(os.getenv("MAX_DEALS_PER_SCAN", "5"))
 
 # Random delays (in seconds) between web requests
-REQUEST_DELAY_MIN = float(os.getenv("REQUEST_DELAY_MIN", "5.0"))
-REQUEST_DELAY_MAX = float(os.getenv("REQUEST_DELAY_MAX", "15.0"))
+REQUEST_DELAY_MIN = float(os.getenv("REQUEST_DELAY_MIN", "4.0"))
+REQUEST_DELAY_MAX = float(os.getenv("REQUEST_DELAY_MAX", "10.0"))
 
 # --- SEPARATE SCAN INTERVALS PER PLATFORM (in minutes) ---
-MYNTRA_INTERVAL_MIN = int(os.getenv("MYNTRA_INTERVAL_MIN", "15"))
-FLIPKART_INTERVAL_MIN = int(os.getenv("FLIPKART_INTERVAL_MIN", "30"))
-AMAZON_INTERVAL_MIN = int(os.getenv("AMAZON_INTERVAL_MIN", "60"))
+MYNTRA_INTERVAL_MIN = int(os.getenv("MYNTRA_INTERVAL_MIN", "8"))
+FLIPKART_INTERVAL_MIN = int(os.getenv("FLIPKART_INTERVAL_MIN", "12"))
+AMAZON_INTERVAL_MIN = int(os.getenv("AMAZON_INTERVAL_MIN", "20"))
 
 # --- STORAGE & LOGGING PATHS (Anchored to BASE_DIR) ---
 DUPLICATE_DB_FILE = BASE_DIR / os.getenv("DUPLICATE_DB_FILE", "posted_deals.json")
