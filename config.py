@@ -25,8 +25,19 @@ PUBLIC_DEALS_CHANNEL = os.getenv("TELEGRAM_PUBLIC_DEALS_CHANNEL", "").strip()
 # Target Single Myntra Product URL (optional reference)
 MYNTRA_PRODUCT_URL = os.getenv("MYNTRA_PRODUCT_URL", "https://www.myntra.com/1364628").strip()
 
-# --- SEARCH KEYWORDS ---
-_raw_keywords = os.getenv("KEYWORDS", "men tshirt, sneakers, hoodie, women kurti")
+# --- SEARCH KEYWORDS (Girls / Women Categories Ordered by Importance) ---
+# Importance: Ethnic Wear (100%), Beauty & Skincare (90%), Fashion Jewellery (80%),
+# Footwear (70%), Handbags (65%), Hair & Personal Care (60%), Watches (45%), Home & Kitchen (40%)
+_DEFAULT_WOMEN_KEYWORDS = (
+    "kurta set, saree, silk saree, cotton saree, women top, women kurti, women dress, bra, "
+    "sunscreen spf 50, face serum, moisturizer, lipstick, kajal, "
+    "earrings, necklace set, bangles, oxidised jewellery, "
+    "women flats, sandals, women heels, women sneakers, "
+    "sling bags, tote bags, handbags, "
+    "shampoo, hair oil, hair accessories, "
+    "women watch, bedsheet, home decor, kitchen organizer"
+)
+_raw_keywords = os.getenv("KEYWORDS", _DEFAULT_WOMEN_KEYWORDS)
 KEYWORDS = [k.strip() for k in _raw_keywords.split(",") if k.strip()]
 
 
@@ -40,6 +51,48 @@ def _parse_keywords(env_val: str, fallback: list) -> list:
 KEYWORDS_MYNTRA = _parse_keywords(os.getenv("KEYWORDS_MYNTRA", ""), KEYWORDS)
 KEYWORDS_FLIPKART = _parse_keywords(os.getenv("KEYWORDS_FLIPKART", ""), KEYWORDS)
 KEYWORDS_AMAZON = _parse_keywords(os.getenv("KEYWORDS_AMAZON", ""), KEYWORDS)
+
+# Category Importance Weights
+CATEGORY_WEIGHTS = {
+    "ethnic_wear": 1.00,       # 100%
+    "beauty_skincare": 0.90,   # 90%
+    "fashion_jewellery": 0.80, # 80%
+    "footwear": 0.70,          # 70%
+    "handbags": 0.65,          # 65%
+    "personal_care": 0.60,     # 60%
+    "watches": 0.45,           # 45%
+    "home_kitchen": 0.40,      # 40%
+}
+
+
+def get_keyword_weight(keyword: str) -> float:
+    """Calculates relative sampling weight for a keyword based on category importance."""
+    kw = keyword.lower().replace("-", " ")
+    # 1. Ethnic wear (100%)
+    if any(k in kw for k in ["kurta", "saree", "sari", "top", "dress", "kurti", "ethnic", "bra", "lehenga"]):
+        return 1.00
+    # 2. Beauty & skincare (90%)
+    if any(k in kw for k in ["sunscreen", "spf", "serum", "moisturizer", "lipstick", "kajal", "beauty", "skincare"]):
+        return 0.90
+    # 3. Fashion jewellery (80%)
+    if any(k in kw for k in ["earring", "necklace", "bangle", "jewellery", "jewelry", "jhumka", "oxidised"]):
+        return 0.80
+    # 4. Footwear (70%)
+    if any(k in kw for k in ["flat", "sandal", "heel", "sneaker", "footwear"]):
+        return 0.70
+    # 5. Handbags (65%)
+    if any(k in kw for k in ["sling", "tote", "handbag", "bag"]):
+        return 0.65
+    # 6. Hair care & personal care (60%)
+    if any(k in kw for k in ["shampoo", "hair", "personal care"]):
+        return 0.60
+    # 7. Watches (45%)
+    if any(k in kw for k in ["watch"]):
+        return 0.45
+    # 8. Home & kitchen (40%)
+    if any(k in kw for k in ["bedsheet", "home", "kitchen", "decor", "cookware", "organizer"]):
+        return 0.40
+    return 0.50
 
 # Maximum keywords to query per platform in a single scan cycle
 MAX_KEYWORDS_PER_SCAN = int(os.getenv("MAX_KEYWORDS_PER_SCAN", "2"))

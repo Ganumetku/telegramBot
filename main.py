@@ -759,6 +759,37 @@ async def send_telegram_message(
     return False
 
 
+def select_weighted_keywords(keywords: List[str], count: int) -> List[str]:
+    """
+    Selects `count` unique keywords using category importance weights.
+    Higher priority categories (Ethnic wear 100%, Beauty 90%, Jewellery 80%, etc.)
+    are sampled more frequently.
+    """
+    if not keywords or count <= 0:
+        return keywords
+    count = min(count, len(keywords))
+    weights = [config.get_keyword_weight(k) for k in keywords]
+
+    pool = list(keywords)
+    pool_weights = list(weights)
+    selected = []
+
+    for _ in range(count):
+        if not pool:
+            break
+        total_w = sum(pool_weights)
+        if total_w <= 0:
+            picked = random.choice(pool)
+        else:
+            picked = random.choices(pool, weights=pool_weights, k=1)[0]
+        idx = pool.index(picked)
+        selected.append(picked)
+        pool.pop(idx)
+        pool_weights.pop(idx)
+
+    return selected
+
+
 # --- SCAN WORKFLOW LOGIC ---
 
 async def scan_platform(
@@ -1031,7 +1062,7 @@ async def main():
                 }
                 platform_keywords = platform_kw_map.get(p_key, config.KEYWORDS)
                 k_count = min(config.MAX_KEYWORDS_PER_SCAN, len(platform_keywords))
-                scan_keywords = random.sample(platform_keywords, k_count) if k_count > 0 else platform_keywords
+                scan_keywords = select_weighted_keywords(platform_keywords, k_count)
 
                 # Execute platform scan independently in its own try/except
                 try:
