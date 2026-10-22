@@ -1022,17 +1022,12 @@ async def main():
     bot_client = telegram.Bot(token=config.BOT_TOKEN)
     review_channel = config.PRIVATE_REVIEW_CHANNEL
 
-    # Send startup test message
+    # Verify Telegram connection silently (do NOT spam channel on restart)
     try:
-        logger.info("📨 Sending startup notification to Review Channel (%s)...", review_channel)
-        startup_msg = (
-            "🤖 <b>Deal Bot Online & Active!</b>\n\n"
-            "Monitoring Myntra, Flipkart, and Amazon India for <b>80%+ discounts</b> and price drops."
-        )
-        await bot_client.send_message(chat_id=review_channel, text=startup_msg, parse_mode="HTML")
-        logger.info("✅ Telegram connection verified successfully.")
+        bot_info = await bot_client.get_me()
+        logger.info("✅ Telegram connection verified successfully (@%s). Silent startup active (no messages posted to channel).", bot_info.username)
     except Exception as e:
-        logger.warning("⚠️ Could not send startup message: %s. (Ensure bot is an Admin in the channel)", e)
+        logger.warning("⚠️ Could not verify Telegram credentials: %s", e)
 
     # Initialize Platform State Trackers
     platforms: Dict[str, Tuple[PlatformState, callable]] = {
