@@ -165,6 +165,36 @@ def clean_price(price_str: str) -> float:
         return 0.0
 
 
+def to_hd_image_url(url: str, source: str = "") -> str:
+    """
+    Transforms low-resolution thumbnail URLs from Amazon, Flipkart, and Myntra
+    into full-resolution, crystal-clear HD images for Telegram cards.
+    Fixes the blurry image issue completely.
+    """
+    if not url:
+        return ""
+    src_lower = (source or "").lower()
+
+    # 1. Amazon: Replace thumbnail resizing token (e.g. ._AC_UL320_.) with ._AC_SL1500_.
+    if "amazon" in src_lower or "media-amazon.com" in url:
+        url = re.sub(r'\._[A-Z0-9,_]+_\.', '._AC_SL1500_.', url)
+
+    # 2. Flipkart: Upgrade low-res image path (e.g. /image/128/128/ or /image/612/612/) to /image/832/832/
+    elif "flipkart" in src_lower or "flixcart.com" in url:
+        url = re.sub(r'/image/\d+/\d+/', '/image/832/832/', url)
+        if "q=70" in url:
+            url = url.replace("q=70", "q=90")
+
+    # 3. Myntra: Upgrade width w_210 to w_1080 and quality q_60 to q_90
+    elif "myntra" in src_lower or "myntassets.com" in url:
+        url = re.sub(r'w_\d+', 'w_1080', url)
+        url = re.sub(r'q_\d+', 'q_90', url)
+        if url.startswith("http://"):
+            url = url.replace("http://", "https://")
+
+    return url
+
+
 # --- PLATFORM SCRAPERS ---
 
 def scrape_myntra(keyword: str, session: Optional[requests.Session] = None) -> List[Dict]:
@@ -238,8 +268,7 @@ def scrape_myntra(keyword: str, session: Optional[requests.Session] = None) -> L
             product_url = f"https://www.myntra.com/{landing_url}" if landing_url else url
 
             image_url = item.get("searchImage", "")
-            if image_url and image_url.startswith("http://"):
-                image_url = image_url.replace("http://", "https://")
+            image_url = to_hd_image_url(image_url, "Myntra")
 
             prod_id = str(item.get("productId", ""))
 
@@ -341,9 +370,8 @@ def scrape_flipkart(keyword: str, session: Optional[requests.Session] = None) ->
                             if images and isinstance(images, list):
                                 raw_img = images[0].get("url", "")
                                 if raw_img:
-                                    image_url = raw_img.replace("{@width}", "600").replace("{@height}", "720").replace("{@quality}", "80")
-                                    if image_url.startswith("http://"):
-                                        image_url = image_url.replace("http://", "https://")
+                                    image_url = raw_img.replace("{@width}", "832").replace("{@height}", "832").replace("{@quality}", "90")
+                                    image_url = to_hd_image_url(image_url, "Flipkart")
 
                             products.append({
                                 "id": f"flipkart:{pid}",
@@ -419,6 +447,7 @@ def scrape_flipkart(keyword: str, session: Optional[requests.Session] = None) ->
 
             img_el = card.select_one("img")
             img_url = img_el.get("src") or img_el.get("data-src") or "" if img_el else ""
+            img_url = to_hd_image_url(img_url, "Flipkart")
 
             products.append({
                 "id": f"flipkart:{prod_id}",
@@ -537,9 +566,10 @@ def scrape_amazon(keyword: str, session: Optional[requests.Session] = None) -> L
 
             discount = round(((original_price - sale_price) / original_price) * 100, 2)
 
-            # Image
+            # Image (Converted to 1500px Ultra HD)
             img_m = re.search(r'class="[^"]*s-image[^"]*"[^>]*src="([^"]+)"', chunk)
             img_url = img_m.group(1) if img_m else ""
+            img_url = to_hd_image_url(img_url, "Amazon")
 
             products.append({
                 "id": f"amazon:{asin}",
@@ -727,6 +757,8 @@ async def send_telegram_message(
     if product_url:
         keyboard = [[telegram.InlineKeyboardButton("🛒 Buy Now", url=product_url)]]
         reply_markup = telegram.InlineKeyboardMarkup(keyboard)
+
+    image_url = to_hd_image_url(image_url)
 
     max_attempts = 3
     for attempt in range(max_attempts):
