@@ -37,6 +37,7 @@ echo "🔄 Restarting telegram-bot service..."
 # Kill any rogue manual instances so only 1 systemd daemon runs
 sudo pkill -f "python3 main.py" 2>/dev/null || true
 sleep 1
+sudo systemctl daemon-reload
 sudo systemctl restart telegram-bot
 
 echo "🎉 Done! Bot is now running 24/7 with new Girls/Women categories."

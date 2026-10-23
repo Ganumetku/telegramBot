@@ -209,10 +209,18 @@ def scrape_myntra(keyword: str, session: Optional[requests.Session] = None) -> L
     logger.info("📡 [Myntra] Crawling search page: %s", url)
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-IN,en;q=0.9,en;q=0.8",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept-Language": "en-IN,en;q=0.9,en-US;q=0.8",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Referer": "https://www.myntra.com/",
+        "Sec-Ch-Ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"Windows"',
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1"
     }
 
     products = []
@@ -240,14 +248,39 @@ def scrape_myntra(keyword: str, session: Optional[requests.Session] = None) -> L
         return []
 
     try:
+        state_data = None
+        # Strategy 1: Primary Regex match
         match = re.search(r"window\.__myx\s*=\s*(\{.+?\});?\s*(?:window\.__INITIAL_STATE__|</script>|$)", response.text)
-        if not match:
-            if "captcha" in response.text.lower() or "blocked" in response.text.lower():
-                raise PlatformBlockedException("Myntra", "CAPTCHA or security challenge")
-            logger.warning("   ⚠️ [Myntra] Could not locate window.__myx JSON script tag.")
+        if match:
+            try:
+                state_data = json.loads(match.group(1))
+            except Exception:
+                state_data = None
+
+        # Strategy 2: String slice fallback if layout or whitespace differs
+        if not state_data and "window.__myx" in response.text:
+            try:
+                raw_text = response.text
+                idx = raw_text.find("window.__myx")
+                eq_idx = raw_text.find("=", idx)
+                if eq_idx != -1:
+                    brace_start = raw_text.find("{", eq_idx)
+                    script_end = raw_text.find("</script>", brace_start)
+                    if brace_start != -1 and script_end != -1:
+                        raw_json = raw_text[brace_start:script_end].strip().rstrip(";")
+                        state_data = json.loads(raw_json)
+            except Exception as slice_err:
+                logger.debug("   [Myntra] String slice parse failed: %s", slice_err)
+
+        if not state_data:
+            title_m = re.search(r"<title>(.*?)</title>", response.text, re.IGNORECASE)
+            page_title = title_m.group(1).strip() if title_m else "No Title"
+            if any(w in response.text.lower() for w in ["captcha", "blocked", "access denied", "challenge", "robot"]):
+                raise PlatformBlockedException("Myntra", f"Security Challenge (Page Title: {page_title})")
+            logger.warning("   ⚠️ [Myntra] Could not locate window.__myx JSON script tag (HTTP %d, Title: '%s', Size: %d bytes).",
+                           response.status_code, page_title, len(response.text))
             return []
 
-        state_data = json.loads(match.group(1))
         search_results = state_data.get("searchData", {}).get("results", {})
         product_list = search_results.get("products", [])
 
