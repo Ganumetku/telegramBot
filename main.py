@@ -30,6 +30,12 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
 import requests
+try:
+    from curl_cffi import requests as curl_requests
+    HAS_CURL_CFFI = True
+except ImportError:
+    curl_requests = None
+    HAS_CURL_CFFI = False
 from bs4 import BeautifulSoup
 import telegram
 import telegram.error
@@ -238,14 +244,32 @@ def scrape_myntra(keyword: str, session: Optional[requests.Session] = None) -> L
 
     for attempt in range(max_retries):
         try:
-            response = client.get(url, headers=headers, timeout=12)
+            if HAS_CURL_CFFI:
+                response = curl_requests.get(
+                    url,
+                    headers=headers,
+                    impersonate="chrome120",
+                    timeout=14
+                )
+            else:
+                # Warm up session with homepage if cookies are missing to acquire Akamai tokens
+                if not client.cookies:
+                    try:
+                        client.get("https://www.myntra.com/", headers=headers, timeout=8)
+                    except Exception:
+                        pass
+                response = client.get(url, headers=headers, timeout=12)
+
             if response.status_code == 200:
+                # Detect Akamai fake 200 "Site Maintenance" block
+                if "site maintenance" in response.text.lower() or len(response.text) < 1500:
+                    raise PlatformBlockedException("Myntra", "Akamai Bot Challenge / Site Maintenance screen")
                 break
             if response.status_code in (403, 429, 503):
                 raise PlatformBlockedException("Myntra", f"HTTP {response.status_code}")
             logger.warning("   ⚠️ Myntra returned HTTP %d. Retrying (Attempt %d/%d)...", response.status_code, attempt + 1, max_retries)
             time.sleep(2)
-        except (requests.exceptions.RequestException, PlatformBlockedException) as e:
+        except (requests.exceptions.RequestException, PlatformBlockedException, Exception) as e:
             if isinstance(e, PlatformBlockedException):
                 raise
             if attempt == max_retries - 1:
@@ -284,7 +308,7 @@ def scrape_myntra(keyword: str, session: Optional[requests.Session] = None) -> L
         if not state_data:
             title_m = re.search(r"<title>(.*?)</title>", response.text, re.IGNORECASE)
             page_title = title_m.group(1).strip() if title_m else "No Title"
-            if any(w in response.text.lower() for w in ["captcha", "blocked", "access denied", "challenge", "robot"]):
+            if any(w in response.text.lower() for w in ["captcha", "blocked", "access denied", "challenge", "robot", "site maintenance"]) or len(response.text) < 1500:
                 raise PlatformBlockedException("Myntra", f"Security Challenge (Page Title: {page_title})")
             logger.warning("   ⚠️ [Myntra] Could not locate window.__myx JSON script tag (HTTP %d, Title: '%s', Size: %d bytes).",
                            response.status_code, page_title, len(response.text))

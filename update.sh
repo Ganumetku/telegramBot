@@ -9,6 +9,13 @@ fi
 echo "📥 Pulling latest code from GitHub..."
 git pull origin main
 
+echo "📦 Installing/updating dependencies (including curl_cffi)..."
+if [ -d "/opt/TelegramBot/venv" ]; then
+    /opt/TelegramBot/venv/bin/pip install -q -r requirements.txt || true
+elif [ -d "venv" ]; then
+    venv/bin/pip install -q -r requirements.txt || true
+fi
+
 echo "⚙️ Updating .env with girls/women categories..."
 python3 -c "
 with open('.env', 'r') as f:
