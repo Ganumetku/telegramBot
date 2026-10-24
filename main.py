@@ -139,9 +139,12 @@ class PlatformState:
 
     def record_block(self, reason: str):
         self.consecutive_blocks += 1
-        # Cooldown: 15 mins -> 30 mins -> 60 mins -> max 180 mins (3h)
-        mins = min(180, 15 * (2 ** (self.consecutive_blocks - 1)))
+        # Cooldown: 5 mins -> 10 mins -> 20 mins -> max 60 mins
+        mins = min(60, 5 * (2 ** (self.consecutive_blocks - 1)))
         self.cooldown_until = datetime.now() + timedelta(minutes=mins)
+        # Re-initialize session to reset cookies and connection pools
+        self.session = requests.Session()
+        self._init_session()
         logger.warning(
             "🚫 [%s] Block/Challenge encountered (%s). Strike %d! Entering cooldown for %dm (until %s).",
             self.name,
@@ -184,6 +187,8 @@ def to_hd_image_url(url: str, source: str = "") -> str:
         url = re.sub(r'/image/\d+/\d+/', '/image/832/832/', url)
         if "q=70" in url:
             url = url.replace("q=70", "q=90")
+        if url.startswith("http://"):
+            url = url.replace("http://", "https://")
 
     # 3. Myntra: Upgrade width w_210 to w_1080 and quality q_60 to q_90
     elif "myntra" in src_lower or "myntassets.com" in url:
@@ -209,11 +214,15 @@ def scrape_myntra(keyword: str, session: Optional[requests.Session] = None) -> L
     logger.info("📡 [Myntra] Crawling search page: %s", url)
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/128.0.0.0 Safari/537.36"
+        ),
         "Accept-Language": "en-IN,en;q=0.9,en-US;q=0.8",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Referer": "https://www.myntra.com/",
-        "Sec-Ch-Ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+        "Sec-Ch-Ua": '"Chromium";v="128", "Not;A=Brand";v="24", "Google Chrome";v="128"',
         "Sec-Ch-Ua-Mobile": "?0",
         "Sec-Ch-Ua-Platform": '"Windows"',
         "Sec-Fetch-Dest": "document",
@@ -380,8 +389,38 @@ def scrape_flipkart(keyword: str, session: Optional[requests.Session] = None) ->
                             title = f"{brand} - {name}" if brand and name and brand not in name else (name or brand or "Fashion Item")
 
                             pricing = val.get("pricing", {})
-                            final_price = pricing.get("finalPrice", {}).get("value") or 0
-                            mrp = pricing.get("mrp", {}).get("value") or final_price
+                            final_price = 0.0
+                            mrp = 0.0
+
+                            # 1. Parse from prices list (Flipkart current JSON structure)
+                            prices_list = pricing.get("prices", [])
+                            if isinstance(prices_list, list):
+                                for p_item in prices_list:
+                                    if not isinstance(p_item, dict):
+                                        continue
+                                    p_val = p_item.get("value") or 0
+                                    try:
+                                        p_val = float(p_val)
+                                    except (ValueError, TypeError):
+                                        continue
+
+                                    if p_item.get("strikeOff") is True:
+                                        mrp = max(mrp, p_val)
+                                    elif p_item.get("strikeOff") is False:
+                                        final_price = p_val
+
+                                # If no strikeOff=False was marked, use minimum price
+                                if final_price == 0.0 and prices_list:
+                                    valid_vals = [float(p.get("value", 0)) for p in prices_list if p.get("value")]
+                                    if valid_vals:
+                                        final_price = min(valid_vals)
+
+                            # 2. Fallbacks for alternate schemas
+                            if final_price == 0.0:
+                                final_price = float(pricing.get("finalPrice", {}).get("value") or 0.0)
+                            if mrp == 0.0 or mrp == final_price:
+                                mrp = float(pricing.get("mrp", {}).get("value") or mrp or final_price)
+
                             total_discount = pricing.get("totalDiscount")
 
                             sale_price = float(final_price)
@@ -390,7 +429,10 @@ def scrape_flipkart(keyword: str, session: Optional[requests.Session] = None) ->
                                 original_price = sale_price
 
                             if original_price > 0 and sale_price > 0:
-                                discount = float(total_discount) if total_discount is not None else round(((original_price - sale_price) / original_price) * 100, 2)
+                                if total_discount is not None and float(total_discount) > 0:
+                                    discount = float(total_discount)
+                                else:
+                                    discount = round(((original_price - sale_price) / original_price) * 100, 2)
                             else:
                                 discount = 0.0
 
@@ -945,12 +987,6 @@ async def scan_platform(
                     last_price = prev_info.get("last_alert_price")
                     last_ts = prev_info.get("last_alert_ts")
 
-                    # If last_alert_price is None (legacy entry), treat it as already posted and skip.
-                    if last_price is None:
-                        continue
-
-                    # Alert again only if sale_price <= last_alert_price * 0.95
-                    # OR if more than 7 days passed since last_alert_ts and discount >= threshold
                     more_than_7_days = False
                     if last_ts:
                         try:
@@ -958,7 +994,15 @@ async def scan_platform(
                             if datetime.now() - alert_dt > timedelta(days=7):
                                 more_than_7_days = True
                         except (ValueError, TypeError):
-                            more_than_7_days = False
+                            more_than_7_days = True
+                    else:
+                        more_than_7_days = True
+
+                    # If last_price is missing or 0, allow repost if 7 days passed or no timestamp
+                    if last_price is None or last_price <= 0:
+                        if not more_than_7_days:
+                            continue
+                        last_price = sale_price
 
                     is_drop = (sale_price <= last_price * 0.95)
                     repost_7d = (more_than_7_days and discount >= threshold)
@@ -1119,7 +1163,10 @@ async def main():
 
                 is_ready, reason = p_state.is_due()
                 if not is_ready:
-                    logger.debug("   [Skip %s]: %s", p_state.name, reason)
+                    if "cooldown" in reason.lower():
+                        logger.info("⏳ [%s] Cooling down: %s", p_state.name, reason)
+                    else:
+                        logger.debug("   [Skip %s]: %s", p_state.name, reason)
                     continue
 
                 # Pick a small subset of keywords per scan for the specific platform
